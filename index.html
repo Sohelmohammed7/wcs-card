@@ -253,7 +253,7 @@
 </div>
 
 <script>
-function saveContact(){
+async function saveContact(){
   const vcard = [
     "BEGIN:VCARD",
     "VERSION:3.0",
@@ -270,10 +270,28 @@ function saveContact(){
     "END:VCARD"
   ].join("\r\n");
 
-  // Navigate directly to a vCard data URI (no download attribute) so mobile
-  // browsers hand it straight to the Contacts app's "Add Contact" screen,
-  // prefilled and editable, with its own Save button — instead of just
-  // saving a .vcf file to Downloads.
+  const filename = "Kishan_Reddy_S_WCS.vcf";
+
+  // Preferred path: Web Share API with a real vCard file. On most modern
+  // Android and iOS browsers this opens the native share sheet with
+  // "Contacts" as a one-tap target — no Downloads folder, no manual import.
+  try {
+    const file = new File([vcard], filename, { type: "text/vcard" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Kishan Reddy S",
+        text: "Save my contact"
+      });
+      return;
+    }
+  } catch (err) {
+    // User cancelled the share sheet, or share failed — fall through to backup.
+    if (err && err.name === "AbortError") return;
+  }
+
+  // Fallback: direct vCard navigation. On iPhones (Safari) this opens the
+  // native Add Contact screen immediately, prefilled and editable.
   const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
   window.location.href = dataUri;
 }
