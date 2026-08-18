@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kishan Reddy S — Worthit Consultancy Services</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#14213D;
+    --gold:#C68A33;
+    --terracotta:#A8432B;
+    --steel:#3E6E8E;
+    --paper:#F6F3EC;
+    --ink:#24262B;
+    --line: rgba(20,33,61,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(198,138,51,0.08), transparent 40%),
+      radial-gradient(circle at 90% 95%, rgba(62,110,142,0.07), transparent 45%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Inter', sans-serif;
+    color:var(--ink);
+    padding:32px 16px;
+  }
+
+  .card{
+    width:100%;
+    max-width:420px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow: 0 30px 60px -25px rgba(20,33,61,0.35);
+    position:relative;
+  }
+
+  .brandbar{
+    padding:28px 28px 20px;
+    position:relative;
+    border-bottom:1px solid var(--line);
+  }
+
+  .wordmark{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:-0.005em;
+    color:var(--gold);
+    margin:0 0 4px;
+    line-height:1;
+  }
+  .orgname{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--navy);
+    margin:0;
+  }
+
+  .identity{ padding:26px 28px 10px; }
+  .name{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:28px;
+    line-height:1.15;
+    color:var(--navy);
+    margin:0 0 6px;
+  }
+  .title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--terracotta);
+    margin:0;
+  }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--steel);
+    margin:18px 28px 0;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+
+  .contact{ padding:14px 28px 6px; display:flex; flex-direction:column; }
+  .row{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:11px 0;
+    text-decoration:none;
+    color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .row:last-child{ border-bottom:none; }
+  .row .ic{
+    width:20px; height:20px; flex-shrink:0; margin-top:1px;
+    color:var(--navy);
+  }
+  .row .txt{ font-size:14px; line-height:1.4; }
+  .row .lbl{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:#9a9793;
+    margin-bottom:2px;
+  }
+
+  .cta{ padding:20px 28px 28px; }
+  .savebtn{
+    width:100%;
+    background:var(--navy);
+    color:#fff;
+    border:1px solid var(--navy);
+    border-radius:10px;
+    padding:14px 18px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    letter-spacing:0.01em;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+  .savebtn:hover{ background:#1c2c52; }
+  .savebtn:active{ transform: scale(0.98); }
+  .savebtn svg{ width:16px; height:16px; }
+
+  .foot{
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:0.08em;
+    color:#a39d92;
+    padding:0 28px 22px;
+  }
+
+  @media (max-width:380px){
+    .name{ font-size:24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="brandbar">
+    <p class="wordmark">WCS</p>
+    <p class="orgname">Worthit Consultancy Services Pvt Ltd</p>
+  </div>
+
+  <div class="identity">
+    <p class="name">Kishan Reddy S</p>
+    <p class="title">Founder &amp; Managing Director</p>
+  </div>
+
+  <p class="eyebrow">Worthy — Consistency — Sustainability</p>
+
+  <div class="contact">
+    <a class="row" href="tel:+919676981669">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.9 21 3 13.1 3 3.7c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>
+      <span class="txt"><span class="lbl">Phone</span>+91 96769 81669</span>
+    </a>
+    <a class="row" href="mailto:kishanreddys@worthitcs.com">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18v12H3V6z"/><path d="M3 6l9 7 9-7"/></svg>
+      <span class="txt"><span class="lbl">Email</span>kishanreddys@worthitcs.com</span>
+    </a>
+    <a class="row" href="https://www.worthitcs.com" target="_blank" rel="noopener">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg>
+      <span class="txt"><span class="lbl">Website</span>www.worthitcs.com</span>
+    </a>
+    <a class="row" href="https://maps.google.com/?q=Vaishnavi+Cymbol+Financial+District+Nanakramguda+Hyderabad" target="_blank" rel="noopener">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+      <span class="txt"><span class="lbl">Office</span>A block, 3rd Floor, Vaishnavi Cymbol,<br>Financial District, Nanakramguda,<br>Hyderabad, Telangana 500032</span>
+    </a>
+  </div>
+
+  <div class="cta">
+    <button class="savebtn" onclick="saveContact()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+      Save Contact
+    </button>
+  </div>
+
+  <p class="foot">SCAN · CONNECT · WCS</p>
+
+</div>
+
+<script>
+function saveContact(){
+  const vcard = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    "N:S;Kishan Reddy;;;",
+    "FN:Kishan Reddy S",
+    "ORG:Worthit Consultancy Services Pvt Ltd",
+    "TITLE:Founder & Managing Director",
+    "TEL;TYPE=CELL:+919676981669",
+    "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
+    "URL:https://www.worthitcs.com",
+    "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
+    "END:VCARD"
+  ].join("\r\n");
+
+  const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Kishan_Reddy_S_WCS.vcf";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
