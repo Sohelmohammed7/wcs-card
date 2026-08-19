@@ -191,31 +191,6 @@
   .savebtn:active{ transform: scale(0.98); }
   .savebtn svg{ width:16px; height:16px; }
 
-  .whatsappbtn{
-    width:100%;
-    background:#25D366;
-    color:#fff;
-    border:1px solid #25D366;
-    border-radius:10px;
-    padding:14px 18px;
-    font-family:'Inter', sans-serif;
-    font-weight:600;
-    font-size:14.5px;
-    letter-spacing:0.01em;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    text-decoration:none;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.2s ease, transform 0.1s ease;
-    margin-top:10px;
-  }
-  .whatsappbtn:hover{ background:#1ebe5a; }
-  .whatsappbtn:active{ transform: scale(0.98); }
-  .whatsappbtn svg{ width:17px; height:17px; }
-
   .savehint{
     margin:0;
     text-align:center;
@@ -303,11 +278,6 @@
       <span id="saveBtnLabel">Save Contact</span>
     </a>
     <p class="savehint" id="saveHint"></p>
-
-    <a class="whatsappbtn" id="whatsappBtn" href="#" role="button" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.9C21.96 6.46 17.51 2 12.04 2Zm5.8 14.02c-.24.68-1.4 1.3-1.94 1.38-.5.08-1.13.11-1.83-.11-.42-.13-.96-.31-1.65-.6-2.9-1.25-4.79-4.17-4.93-4.36-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.12 1.02-2.41.27-.29.58-.36.78-.36.19 0 .39 0 .56.01.18.01.42-.07.66.5.24.58.83 2 .9 2.14.07.15.12.32.02.51-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.29.75 1.24 1.62 2.01 1.11.99 2.05 1.3 2.34 1.44.29.15.46.13.63-.08.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.15.26.1 1.65.78 1.93.92.29.15.48.22.55.34.07.13.07.72-.17 1.4Z"/></svg>
-      <span>Share via WhatsApp</span>
-    </a>
   </div>
 
   <p class="foot">SCAN · CONNECT · WCS</p>
@@ -339,28 +309,9 @@
     "END:VCARD"
   ].join("\r\n");
 
-  const fileName = "Kishan_Reddy_S_WCS.vcf";
+  const fileName = "Kishan Reddy S - WCS.vcf";
   const saveBtn = document.getElementById("saveBtn");
   const hint = document.getElementById("saveHint");
-  const whatsappBtn = document.getElementById("whatsappBtn");
-
-  // ---- Share via WhatsApp --------------------------------------------
-  // There is no API for a website to push a contact directly into
-  // WhatsApp or trigger its native "Add to Contacts" — that only works
-  // inside WhatsApp itself, with OS-level access no outside site has.
-  // What IS reliably possible everywhere: opening a WhatsApp chat with
-  // the contact details pre-filled as text via the standard wa.me link.
-  // No phone number in the link = WhatsApp lets the user pick who to
-  // send it to (including "Message yourself").
-  const whatsappText =
-    "*Kishan Reddy S*\n" +
-    "Worthit Consultancy Services (WCS)\n\n" +
-    "📞 +91 96769 81669\n" +
-    "✉️ kishanreddys@worthitcs.com\n" +
-    "🌐 https://www.worthitcs.com\n" +
-    "📍 A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda, Hyderabad, Telangana 500032, India";
-
-  whatsappBtn.setAttribute("href", "https://wa.me/?text=" + encodeURIComponent(whatsappText));
 
   // Native fallback baked straight into the DOM: if for any reason the
   // click listener below doesn't run, this is still a real, working
@@ -381,20 +332,33 @@
     setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
     if (hint) {
-      hint.textContent = "Saved — open the downloaded file below to add it to Contacts, prefilled and editable.";
+      hint.textContent = (isIOS || isAndroid)
+        ? "Saved — open the downloaded file to add it to Contacts."
+        : "Saved — open the downloaded file to import it into your contacts app.";
       hint.classList.add("show");
     }
   }
 
-  // Always download directly — no Web Share attempt. Handing the vCard
-  // to Google Contacts via the share sheet often opens a BLANK "new
-  // contact" form instead of actually parsing the vCard fields (a known
-  // Android/Contacts-app limitation, not something this page can fix).
-  // Downloading the file and letting the user open it themselves is the
-  // path that reliably triggers Android's native vCard import parser —
-  // showing every field prefilled and editable, exactly as intended.
-  saveBtn.addEventListener("click", function (e) {
+  saveBtn.addEventListener("click", async function (e) {
     e.preventDefault();
+
+    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
+
+    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
+      try {
+        await navigator.share({
+          files: [vcardFile],
+          title: "Kishan Reddy S",
+          text: "Add to Contacts"
+        });
+        return; // user completed (or cancelled) the native share sheet
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // user cancelled on purpose
+        downloadVcf(); // share attempt errored out — guarantee a download anyway
+        return;
+      }
+    }
+
     downloadVcf();
   });
 </script>
