@@ -189,6 +189,24 @@
   .savebtn:active{ transform: scale(0.98); }
   .savebtn svg{ width:16px; height:16px; }
 
+  .savehint{
+    margin:0;
+    text-align:center;
+    font-family:'Inter', sans-serif;
+    font-size:11.5px;
+    line-height:1.4;
+    color:var(--muted);
+    max-height:0;
+    opacity:0;
+    overflow:hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  }
+  .savehint.show{
+    margin-top:10px;
+    max-height:60px;
+    opacity:1;
+  }
+
   .foot{
     text-align:center;
     font-family:'IBM Plex Mono', monospace;
@@ -253,10 +271,11 @@
   </div>
 
   <div class="cta">
-    <button class="savebtn" onclick="saveContact()">
+    <button class="savebtn" id="saveBtn" onclick="saveContact()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
-      Save Contact
+      <span id="saveBtnLabel">Save Contact</span>
     </button>
+    <p class="savehint" id="saveHint"></p>
   </div>
 
   <p class="foot">SCAN · CONNECT · WCS</p>
@@ -264,25 +283,62 @@
 </div>
 
 <script>
-function saveContact(){
-  const vcard = [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    "N:S;Kishan Reddy;;;",
-    "FN:Kishan Reddy S",
-    "TEL;TYPE=CELL:+919676981669",
-    "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
-    "URL;TYPE=Website:https://www.worthitcs.com",
-    "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
-    "END:VCARD"
-  ].join("\r\n");
+  // ---- Platform detection ---------------------------------------------
+  // Only iOS/Safari lets a website hand off straight into the native
+  // "Add Contact" screen with zero file step (data: URI navigation).
+  // Every other platform (Android, desktop Windows/Mac/Linux) has no such
+  // API — the browser will always save a .vcf file first; opening that
+  // file is what launches the native, editable contact screen there.
+  // This is a browser/OS sandboxing limit, not something JS can bypass.
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isAndroid = /Android/.test(ua);
 
-  // Direct vCard navigation — no download step first. On iPhones (Safari)
-  // this opens the native Add Contact screen immediately, prefilled and
-  // editable, so the user can just tap Save.
-  const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
-  window.location.href = dataUri;
-}
+  function saveContact(){
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      "N:S;Kishan Reddy;;;",
+      "FN:Kishan Reddy S",
+      "TEL;TYPE=CELL:+919676981669",
+      "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
+      "URL;TYPE=Website:https://www.worthitcs.com",
+      "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
+      "END:VCARD"
+    ].join("\r\n");
+
+    const hint = document.getElementById("saveHint");
+
+    if (isIOS) {
+      // Direct vCard navigation — no download step. Opens the native
+      // Add Contact screen immediately, prefilled and editable.
+      const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
+      window.location.href = dataUri;
+      return;
+    }
+
+    // Android + desktop: browser will save a .vcf file. There is no way
+    // to skip this step on these platforms. Opening the saved file is
+    // still a native, editable "add contact" screen — it's just one
+    // extra tap. We name the file clearly and show a short hint so the
+    // user knows what to do next.
+    const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "Kishan Reddy S - WCS.vcf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+
+    if (hint) {
+      hint.textContent = isAndroid
+        ? "Saved — open the downloaded file to add it to Contacts."
+        : "Saved — open the downloaded file to import it into your contacts app.";
+      hint.classList.add("show");
+    }
+  }
 </script>
 
 </body>
