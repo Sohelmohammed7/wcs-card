@@ -285,19 +285,17 @@
 </div>
 
 <script>
-  // ---- Platform detection ---------------------------------------------
-  // Real Safari on iOS lets a website hand off straight into the native
-  // "Add Contact" screen with zero file step — but ONLY actual Safari.
-  // Chrome/Firefox/Edge on iOS all run on the same WebKit engine, but
-  // Apple does not extend that native "Add Contact" hand-off to them —
-  // tapping a data:text/vcard link there can just silently do nothing.
-  // So: true iOS Safari gets the direct link-navigation approach; every
-  // other browser (Chrome/Firefox/Edge on iOS, Android, desktop) gets
-  // the Web Share → download fallback path instead.
+  // ---- Save Contact ------------------------------------------------
+  // Same behavior on every platform: try the Web Share API first
+  // (native share sheet — on iOS/Android this often surfaces an
+  // "Add to Contacts" action directly). If sharing isn't available or
+  // fails, fall back to a plain named .vcf file download — this always
+  // works, on every browser, on every OS, guaranteed. No more special-
+  // cased "direct data: URI" trick for Safari — it wasn't reliable in
+  // testing, so every platform now gets the same guaranteed download.
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
   const isAndroid = /Android/.test(ua);
-  const isIOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|mercury/i.test(ua);
 
   const vcard = [
     "BEGIN:VCARD",
@@ -315,55 +313,54 @@
   const saveBtn = document.getElementById("saveBtn");
   const hint = document.getElementById("saveHint");
 
-  if (isIOSSafari) {
-    // Real anchor navigation to a data: URI — the reliable path on true
-    // iOS Safari. Set at load time so the click is a plain, native link
-    // navigation with nothing programmatic getting in the way.
-    saveBtn.setAttribute("href", "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard));
-    // No JS click handler needed — let the browser handle it natively.
-  } else {
-    // iOS Chrome/Firefox/Edge, Android, and desktop: prevent the default
-    // "#" navigation and instead try the Web Share API (native share
-    // sheet, "Contacts"/"Add to Contacts" target where available), then
-    // fall back to a plain named .vcf download so a file is always
-    // reachable even where sharing isn't supported.
-    saveBtn.addEventListener("click", async function (e) {
-      e.preventDefault();
+  // Native fallback baked straight into the DOM: if for any reason the
+  // click listener below doesn't run, this is still a real, working
+  // download link on its own — browsers ignore the JS entirely in that
+  // case and just follow the href/download attributes.
+  saveBtn.setAttribute("href", "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard));
+  saveBtn.setAttribute("download", fileName);
 
-      const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
+  function downloadVcf() {
+    const blob = new Blob([vcard], { type: "text/vcard" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
-      if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
-        try {
-          await navigator.share({
-            files: [vcardFile],
-            title: "Kishan Reddy S",
-            text: "Add to Contacts"
-          });
-          return; // user completed (or cancelled) the native share sheet
-        } catch (err) {
-          if (err && err.name === "AbortError") return; // user cancelled on purpose
-          // otherwise fall through to the download fallback
-        }
-      }
-
-      const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
-
-      if (hint) {
-        hint.textContent = (isAndroid || isIOS)
-          ? "Saved — open the downloaded file to add it to Contacts."
-          : "Saved — open the downloaded file to import it into your contacts app.";
-        hint.classList.add("show");
-      }
-    });
+    if (hint) {
+      hint.textContent = (isIOS || isAndroid)
+        ? "Saved — open the downloaded file to add it to Contacts."
+        : "Saved — open the downloaded file to import it into your contacts app.";
+      hint.classList.add("show");
+    }
   }
+
+  saveBtn.addEventListener("click", async function (e) {
+    e.preventDefault();
+
+    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
+
+    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
+      try {
+        await navigator.share({
+          files: [vcardFile],
+          title: "Kishan Reddy S",
+          text: "Add to Contacts"
+        });
+        return; // user completed (or cancelled) the native share sheet
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // user cancelled on purpose
+        downloadVcf(); // share attempt errored out — guarantee a download anyway
+        return;
+      }
+    }
+
+    downloadVcf();
+  });
 </script>
 
 </body>
