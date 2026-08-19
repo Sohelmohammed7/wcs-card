@@ -381,33 +381,20 @@
     setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
     if (hint) {
-      hint.textContent = (isIOS || isAndroid)
-        ? "Saved — open the downloaded file to add it to Contacts."
-        : "Saved — open the downloaded file to import it into your contacts app.";
+      hint.textContent = "Saved — open the downloaded file below to add it to Contacts, prefilled and editable.";
       hint.classList.add("show");
     }
   }
 
-  saveBtn.addEventListener("click", async function (e) {
+  // Always download directly — no Web Share attempt. Handing the vCard
+  // to Google Contacts via the share sheet often opens a BLANK "new
+  // contact" form instead of actually parsing the vCard fields (a known
+  // Android/Contacts-app limitation, not something this page can fix).
+  // Downloading the file and letting the user open it themselves is the
+  // path that reliably triggers Android's native vCard import parser —
+  // showing every field prefilled and editable, exactly as intended.
+  saveBtn.addEventListener("click", function (e) {
     e.preventDefault();
-
-    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
-
-    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
-      try {
-        await navigator.share({
-          files: [vcardFile],
-          title: "Kishan Reddy S",
-          text: "Add to Contacts"
-        });
-        return; // user completed (or cancelled) the native share sheet
-      } catch (err) {
-        if (err && err.name === "AbortError") return; // user cancelled on purpose
-        downloadVcf(); // share attempt errored out — guarantee a download anyway
-        return;
-      }
-    }
-
     downloadVcf();
   });
 </script>
