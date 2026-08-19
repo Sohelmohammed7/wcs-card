@@ -183,6 +183,8 @@
     align-items:center;
     justify-content:center;
     gap:8px;
+    text-decoration:none;
+    -webkit-tap-highlight-color: transparent;
     transition: background 0.2s ease, transform 0.1s ease;
   }
   .savebtn:hover{ background:#1c2c52; }
@@ -271,10 +273,10 @@
   </div>
 
   <div class="cta">
-    <button class="savebtn" id="saveBtn" onclick="saveContact()">
+    <a class="savebtn" id="saveBtn" href="#" role="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
       <span id="saveBtnLabel">Save Contact</span>
-    </button>
+    </a>
     <p class="savehint" id="saveHint"></p>
   </div>
 
@@ -283,62 +285,99 @@
 </div>
 
 <script>
-  // ---- Platform detection ---------------------------------------------
-  // Only iOS/Safari lets a website hand off straight into the native
-  // "Add Contact" screen with zero file step (data: URI navigation).
-  // Every other platform (Android, desktop Windows/Mac/Linux) has no such
-  // API — the browser will always save a .vcf file first; opening that
-  // file is what launches the native, editable contact screen there.
-  // This is a browser/OS sandboxing limit, not something JS can bypass.
+  // ---- Save Contact ------------------------------------------------
+  // Same behavior on every platform: try the Web Share API first
+  // (native share sheet — on iOS/Android this often surfaces an
+  // "Add to Contacts" action directly). If sharing isn't available or
+  // fails, fall back to a plain named .vcf file download — this always
+  // works, on every browser, on every OS, guaranteed. No more special-
+  // cased "direct data: URI" trick for Safari — it wasn't reliable in
+  // testing, so every platform now gets the same guaranteed download.
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
   const isAndroid = /Android/.test(ua);
 
-  function saveContact(){
-    const vcard = [
-      "BEGIN:VCARD",
-      "VERSION:3.0",
-      "N:S;Kishan Reddy;;;",
-      "FN:Kishan Reddy S",
-      "TEL;TYPE=CELL:+919676981669",
-      "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
-      "URL;TYPE=Website:https://www.worthitcs.com",
-      "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
-      "END:VCARD"
-    ].join("\r\n");
+  const vcard = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    "N:S;Kishan Reddy;;;",
+    "FN:Kishan Reddy S",
+    "TEL;TYPE=CELL:+919676981669",
+    "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
+    "URL;TYPE=Website:https://www.worthitcs.com",
+    "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
+    "END:VCARD"
+  ].join("\r\n");
 
-    const hint = document.getElementById("saveHint");
+  const fileName = "Kishan Reddy S - WCS.vcf";
+  const saveBtn = document.getElementById("saveBtn");
+  const hint = document.getElementById("saveHint");
 
-    if (isIOS) {
-      // Direct vCard navigation — no download step. Opens the native
-      // Add Contact screen immediately, prefilled and editable.
-      const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
-      window.location.href = dataUri;
-      return;
-    }
+  // Native fallback baked straight into the DOM: if for any reason the
+  // click listener below doesn't run, this is still a real, working
+  // download link on its own — browsers ignore the JS entirely in that
+  // case and just follow the href/download attributes.
+  saveBtn.setAttribute("href", "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard));
+  saveBtn.setAttribute("download", fileName);
 
-    // Android + desktop: browser will save a .vcf file. There is no way
-    // to skip this step on these platforms. Opening the saved file is
-    // still a native, editable "add contact" screen — it's just one
-    // extra tap. We name the file clearly and show a short hint so the
-    // user knows what to do next.
-    const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+  function downloadVcf() {
+    const blob = new Blob([vcard], { type: "text/vcard" });
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = "Kishan Reddy S - WCS.vcf";
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
     if (hint) {
-      hint.textContent = isAndroid
-        ? "Saved — open the downloaded file to add it to Contacts."
-        : "Saved — open the downloaded file to import it into your contacts app.";
+      hint.textContent = "Saved — open the downloaded file to import it into your contacts app.";
       hint.classList.add("show");
     }
   }
+
+  // iOS Safari doesn't reliably honor the `download` attribute on
+  // blob: URLs for .vcf files — it often just previews the blob
+  // instead of offering "Add to Contact". A direct data: URI
+  // navigation is what iOS actually recognizes and hands off to
+  // the Contacts app, so iOS gets its own path.
+  function openVcfIOS() {
+    const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
+    window.location.href = dataUri;
+
+    if (hint) {
+      hint.textContent = "Tap \"Add to Contacts\" or \"Create New Contact\" on the next screen.";
+      hint.classList.add("show");
+    }
+  }
+
+  saveBtn.addEventListener("click", async function (e) {
+    e.preventDefault();
+
+    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
+
+    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
+      try {
+        await navigator.share({
+          files: [vcardFile],
+          title: "Kishan Reddy S",
+          text: "Add to Contacts"
+        });
+        return; // user completed (or cancelled) the native share sheet
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // user cancelled on purpose
+        // share attempt errored out — fall through to the guaranteed
+        // per-platform path below
+      }
+    }
+
+    if (isIOS) {
+      openVcfIOS();
+    } else {
+      downloadVcf();
+    }
+  });
 </script>
 
 </body>

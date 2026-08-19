@@ -355,6 +355,15 @@
   saveBtn.addEventListener("click", async function (e) {
     e.preventDefault();
 
+    // iOS: go straight to the data: URI path. navigator.share() with
+    // a vcf file "succeeds" on iOS but only opens the generic share
+    // sheet (file as an attachment) — not the prefilled "New Contact"
+    // screen we actually want. So iOS skips share() entirely.
+    if (isIOS) {
+      openVcfIOS();
+      return;
+    }
+
     const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
 
     if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
@@ -368,15 +377,11 @@
       } catch (err) {
         if (err && err.name === "AbortError") return; // user cancelled on purpose
         // share attempt errored out — fall through to the guaranteed
-        // per-platform path below
+        // download path below
       }
     }
 
-    if (isIOS) {
-      openVcfIOS();
-    } else {
-      downloadVcf();
-    }
+    downloadVcf();
   });
 </script>
 
