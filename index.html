@@ -332,9 +332,22 @@
     setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
     if (hint) {
-      hint.textContent = (isIOS || isAndroid)
-        ? "Saved — open the downloaded file to add it to Contacts."
-        : "Saved — open the downloaded file to import it into your contacts app.";
+      hint.textContent = "Saved — open the downloaded file to import it into your contacts app.";
+      hint.classList.add("show");
+    }
+  }
+
+  // iOS Safari doesn't reliably honor the `download` attribute on
+  // blob: URLs for .vcf files — it often just previews the blob
+  // instead of offering "Add to Contact". A direct data: URI
+  // navigation is what iOS actually recognizes and hands off to
+  // the Contacts app, so iOS gets its own path.
+  function openVcfIOS() {
+    const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
+    window.location.href = dataUri;
+
+    if (hint) {
+      hint.textContent = "Tap \"Add to Contacts\" or \"Create New Contact\" on the next screen.";
       hint.classList.add("show");
     }
   }
@@ -354,12 +367,16 @@
         return; // user completed (or cancelled) the native share sheet
       } catch (err) {
         if (err && err.name === "AbortError") return; // user cancelled on purpose
-        downloadVcf(); // share attempt errored out — guarantee a download anyway
-        return;
+        // share attempt errored out — fall through to the guaranteed
+        // per-platform path below
       }
     }
 
-    downloadVcf();
+    if (isIOS) {
+      openVcfIOS();
+    } else {
+      downloadVcf();
+    }
   });
 </script>
 
