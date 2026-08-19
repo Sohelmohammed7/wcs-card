@@ -294,7 +294,7 @@
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
   const isAndroid = /Android/.test(ua);
 
-  async function saveContact(){
+  function saveContact(){
     const vcard = [
       "BEGIN:VCARD",
       "VERSION:3.0",
@@ -317,38 +317,16 @@
       return;
     }
 
-    // Android + desktop: try the Web Share API first. This hands the
-    // vCard file to the native OS share sheet, which on Android includes
-    // a "Contacts" target that imports it directly — no Downloads folder,
-    // no file manager, no visible "file download" at all.
-    const fileName = "Kishan Reddy S - WCS.vcf";
-    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
-
-    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
-      try {
-        await navigator.share({
-          files: [vcardFile],
-          title: "Kishan Reddy S",
-          text: "Add to Contacts"
-        });
-        return; // user completed (or cancelled) the native share sheet
-      } catch (err) {
-        // User dismissed the share sheet, or share failed — fall through
-        // to the download fallback below rather than leaving them stuck.
-        if (err && err.name === "AbortError") return; // user cancelled on purpose
-      }
-    }
-
-    // Fallback for browsers with no Web Share / file-sharing support
-    // (older Android WebViews, all desktop browsers): save a .vcf file.
-    // Opening the saved file still launches a native, editable "add
-    // contact" screen — it's just one extra tap. We name the file
-    // clearly and show a short hint so the user knows what to do next.
+    // Android + desktop: browser will save a .vcf file. There is no way
+    // to skip this step on these platforms. Opening the saved file is
+    // still a native, editable "add contact" screen — it's just one
+    // extra tap. We name the file clearly and show a short hint so the
+    // user knows what to do next.
     const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = fileName;
+    a.download = "Kishan Reddy S - WCS.vcf";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
