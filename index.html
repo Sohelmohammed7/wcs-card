@@ -183,6 +183,8 @@
     align-items:center;
     justify-content:center;
     gap:8px;
+    text-decoration:none;
+    -webkit-tap-highlight-color: transparent;
     transition: background 0.2s ease, transform 0.1s ease;
   }
   .savebtn:hover{ background:#1c2c52; }
@@ -271,10 +273,10 @@
   </div>
 
   <div class="cta">
-    <button class="savebtn" id="saveBtn" onclick="saveContact()">
+    <a class="savebtn" id="saveBtn" href="#" role="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
       <span id="saveBtnLabel">Save Contact</span>
-    </button>
+    </a>
     <p class="savehint" id="saveHint"></p>
   </div>
 
@@ -284,82 +286,83 @@
 
 <script>
   // ---- Platform detection ---------------------------------------------
-  // Only iOS/Safari lets a website hand off straight into the native
-  // "Add Contact" screen with zero file step (data: URI navigation).
-  // Every other platform (Android, desktop Windows/Mac/Linux) has no such
-  // API — the browser will always save a .vcf file first; opening that
-  // file is what launches the native, editable contact screen there.
-  // This is a browser/OS sandboxing limit, not something JS can bypass.
+  // Real Safari on iOS lets a website hand off straight into the native
+  // "Add Contact" screen with zero file step — but ONLY actual Safari.
+  // Chrome/Firefox/Edge on iOS all run on the same WebKit engine, but
+  // Apple does not extend that native "Add Contact" hand-off to them —
+  // tapping a data:text/vcard link there can just silently do nothing.
+  // So: true iOS Safari gets the direct link-navigation approach; every
+  // other browser (Chrome/Firefox/Edge on iOS, Android, desktop) gets
+  // the Web Share → download fallback path instead.
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
   const isAndroid = /Android/.test(ua);
+  const isIOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|mercury/i.test(ua);
 
-  async function saveContact(){
-    const vcard = [
-      "BEGIN:VCARD",
-      "VERSION:3.0",
-      "N:S;Kishan Reddy;;;",
-      "FN:Kishan Reddy S",
-      "TEL;TYPE=CELL:+919676981669",
-      "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
-      "URL;TYPE=Website:https://www.worthitcs.com",
-      "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
-      "END:VCARD"
-    ].join("\r\n");
+  const vcard = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    "N:S;Kishan Reddy;;;",
+    "FN:Kishan Reddy S",
+    "TEL;TYPE=CELL:+919676981669",
+    "EMAIL;TYPE=WORK:kishanreddys@worthitcs.com",
+    "URL;TYPE=Website:https://www.worthitcs.com",
+    "ADR;TYPE=WORK:;;A block, 3rd Floor, Vaishnavi Cymbol, Financial District, Nanakramguda;Hyderabad;Telangana;500032;India",
+    "END:VCARD"
+  ].join("\r\n");
 
-    const hint = document.getElementById("saveHint");
+  const fileName = "Kishan Reddy S - WCS.vcf";
+  const saveBtn = document.getElementById("saveBtn");
+  const hint = document.getElementById("saveHint");
 
-    if (isIOS) {
-      // Direct vCard navigation — no download step. Opens the native
-      // Add Contact screen immediately, prefilled and editable.
-      const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
-      window.location.href = dataUri;
-      return;
-    }
+  if (isIOSSafari) {
+    // Real anchor navigation to a data: URI — the reliable path on true
+    // iOS Safari. Set at load time so the click is a plain, native link
+    // navigation with nothing programmatic getting in the way.
+    saveBtn.setAttribute("href", "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard));
+    // No JS click handler needed — let the browser handle it natively.
+  } else {
+    // iOS Chrome/Firefox/Edge, Android, and desktop: prevent the default
+    // "#" navigation and instead try the Web Share API (native share
+    // sheet, "Contacts"/"Add to Contacts" target where available), then
+    // fall back to a plain named .vcf download so a file is always
+    // reachable even where sharing isn't supported.
+    saveBtn.addEventListener("click", async function (e) {
+      e.preventDefault();
 
-    // Android + desktop: try the Web Share API first. This hands the
-    // vCard file to the native OS share sheet, which on Android includes
-    // a "Contacts" target that imports it directly — no Downloads folder,
-    // no file manager, no visible "file download" at all.
-    const fileName = "Kishan Reddy S - WCS.vcf";
-    const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
+      const vcardFile = new File([vcard], fileName, { type: "text/vcard" });
 
-    if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
-      try {
-        await navigator.share({
-          files: [vcardFile],
-          title: "Kishan Reddy S",
-          text: "Add to Contacts"
-        });
-        return; // user completed (or cancelled) the native share sheet
-      } catch (err) {
-        // User dismissed the share sheet, or share failed — fall through
-        // to the download fallback below rather than leaving them stuck.
-        if (err && err.name === "AbortError") return; // user cancelled on purpose
+      if (navigator.canShare && navigator.canShare({ files: [vcardFile] })) {
+        try {
+          await navigator.share({
+            files: [vcardFile],
+            title: "Kishan Reddy S",
+            text: "Add to Contacts"
+          });
+          return; // user completed (or cancelled) the native share sheet
+        } catch (err) {
+          if (err && err.name === "AbortError") return; // user cancelled on purpose
+          // otherwise fall through to the download fallback
+        }
       }
-    }
 
-    // Fallback for browsers with no Web Share / file-sharing support
-    // (older Android WebViews, all desktop browsers): save a .vcf file.
-    // Opening the saved file still launches a native, editable "add
-    // contact" screen — it's just one extra tap. We name the file
-    // clearly and show a short hint so the user knows what to do next.
-    const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+      const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
 
-    if (hint) {
-      hint.textContent = isAndroid
-        ? "Saved — open the downloaded file to add it to Contacts."
-        : "Saved — open the downloaded file to import it into your contacts app.";
-      hint.classList.add("show");
-    }
+      if (hint) {
+        hint.textContent = (isAndroid || isIOS)
+          ? "Saved — open the downloaded file to add it to Contacts."
+          : "Saved — open the downloaded file to import it into your contacts app.";
+        hint.classList.add("show");
+      }
+    });
   }
 </script>
 
