@@ -292,13 +292,12 @@ async function saveContact(){
   ].join("\r\n");
 
   const filename = "Kishan_Reddy_S_WCS.vcf";
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-  // Path 1 — Web Share API. This opens the native OS share sheet with a
-  // "Contacts" (or similarly named) target. Tapping that target hands the
-  // vCard straight to the Contacts app's own Add/Edit screen — prefilled,
-  // editable, and with no file ever touching Downloads. This is the only
-  // truly download-free path on Android, so it's always tried first.
+  // Preferred path: Web Share API with a real vCard file. On modern Android
+  // and iOS browsers this opens the native share sheet with "Contacts" (or
+  // "Save Contact") as a one-tap target. Tapping it opens the device's own
+  // Add/Edit Contact screen with every field above already filled in —
+  // the user can save as-is or edit any field before confirming.
   try {
     const file = new File([vcard], filename, { type: "text/vcard" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -310,34 +309,18 @@ async function saveContact(){
       return;
     }
   } catch (err) {
-    // User cancelled the share sheet — stop, don't fall through to a download.
+    // User cancelled the share sheet — do nothing further.
     if (err && err.name === "AbortError") return;
   }
 
-  // Path 2 — iOS Safari without Share API support (rare, but some in-app
-  // browsers lack it). Navigating to a vCard data URI opens the native
-  // "Add Contact" overlay directly and instantly — no download, no visible
-  // file, nothing to open afterward.
-  if (isIOS) {
-    const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
-    window.location.href = dataUri;
-    return;
-  }
-
-  // Path 3 — Android/desktop browsers with neither of the above. There is
-  // no web API left that can open the native Add Contact screen without a
-  // file changing hands first; this is a browser sandboxing limit, not
-  // something this page can route around. The saved .vcf still opens
-  // straight into a prefilled, editable Contacts form.
-  const blob = new Blob([vcard], { type: "text/vcard" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  // Fallback for browsers without Web Share (mainly desktop, or older
+  // mobile browsers): navigate to a vCard data URI. iOS Safari opens this
+  // directly in the native "Add Contact" screen, prefilled and editable.
+  // Android browsers typically download the .vcf; opening it from
+  // Downloads/notifications hands off to the Contacts app with the same
+  // prefilled, editable form.
+  const dataUri = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcard);
+  window.location.href = dataUri;
 }
 </script>
 
